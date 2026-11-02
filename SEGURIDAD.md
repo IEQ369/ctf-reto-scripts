@@ -33,28 +33,5 @@ Preservar las claves y la BD del motor con permisos del SO y backups. Windows
 requiere ACL adecuadas: chmod no sustituye ACL. El usuario de servicio debe ser
 dedicado. Ejecutar API y validación en entornos separados.
 
-## Qué revisar en este repositorio
-
-- **Secretos y configuración local:** no versionar claves, tokens, bases de datos,
-  entornos virtuales ni carpetas de configuración de herramientas. `.gitignore`
-  no elimina secretos ya incluidos en commits: si se filtra una credencial, revocarla
-  y revisar su historial antes de continuar.
-- **Entradas y archivos:** validar el esquema, rechazar campos desconocidos, rutas
-  peligrosas y enlaces; comprobar archivos declarados, tamaños y hashes. Esto no
-  sustituye el aislamiento al ejecutar código de autores.
-- **Salidas públicas:** publicar solo los artefactos declarados; las soluciones
-  de los ejemplos son didácticas, pero las soluciones de retos reales del evento
-  deben entregarse por un canal privado.
-- **Dependencias:** las versiones están fijadas en requirements-lock.txt. Fijar
-  versiones no prueba que estén libres de vulnerabilidades. Antes de una entrega,
-  se puede ejecutar `python -m pip_audit -r requirements-lock.txt` desde un entorno
-  de auditoría con pip-audit instalado. Requiere red y consulta un servicio de avisos;
-  no se ejecuta dentro de los generadores. Revisar resultados antes de actualizar.
-
-Este kit no maneja sesiones, cookies, contraseñas, tablas de usuarios ni endpoints
-HTTP públicos. Autenticación, autorización, consultas parametrizadas, límites de
-intentos, cabeceras HTTP y HTTPS se verifican en el repositorio de la plataforma.
-No es necesario agregar esos componentes al generador para cumplir su contrato.
-
 Documentación técnica: [JSON Schema](https://python-jsonschema.readthedocs.io/en/stable/validate/),
 [restricciones Docker](https://docs.docker.com/engine/containers/resource_constraints/).
