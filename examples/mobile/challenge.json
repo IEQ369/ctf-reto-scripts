@@ -1,0 +1,28 @@
+{
+  "schema_version": 2,
+  "id": "mobile-01",
+  "version": 1,
+  "title": "Mobile 01",
+  "description": "Analiza el material y recupera la respuesta común. Luego canjéala en la plataforma.",
+  "category": "mobile",
+  "difficulty": "intro",
+  "points": 100,
+  "delivery": {
+    "kind": "artifact",
+    "build": "static"
+  },
+  "public_files": [
+    "app-debug.apk"
+  ],
+  "requirements": [
+    "Python 3.13 y CTF Reto Scripts 2.0.0; sin dependencias adicionales"
+  ],
+  "hints": [],
+  "limits": {
+    "seconds": 30,
+    "memory_mb": 256,
+    "max_files": 20,
+    "max_bytes": 52428800
+  },
+  "readiness": "pending-infrastructure"
+}

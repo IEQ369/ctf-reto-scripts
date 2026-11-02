@@ -1,0 +1,40 @@
+{
+  "schema_version": 2,
+  "id": "cambiar-id",
+  "version": 1,
+  "title": "Cambiar Id",
+  "description": "Analiza el material y recupera la respuesta común. Luego canjéala en la plataforma.",
+  "category": "blockchain",
+  "difficulty": "intro",
+  "points": 100,
+  "delivery": {
+    "kind": "service",
+    "service": {
+      "management": "external",
+      "url": "http://127.0.0.1:8545",
+      "health_url": "http://127.0.0.1:8545",
+      "state": "mutable",
+      "isolation": "per-participant",
+      "deployment_notes": "PENDIENTE: responsable, URL real, TLS, prueba funcional y disponibilidad. El motor no despliega este servicio.",
+      "blockchain": {
+        "chain_id": 31337,
+        "network": "local-test",
+        "accounts": "Cuentas sintéticas con fondos sin valor. No usar claves reales.",
+        "reset": "Recrear la cadena local de cada laboratorio; nunca reiniciar una cadena compartida durante el evento.",
+        "contract_scope": "per-participant"
+      }
+    }
+  },
+  "public_files": [],
+  "requirements": [
+    "Python 3.13 y CTF Reto Scripts 2.0.0; sin dependencias adicionales"
+  ],
+  "hints": [],
+  "limits": {
+    "seconds": 30,
+    "memory_mb": 256,
+    "max_files": 20,
+    "max_bytes": 52428800
+  },
+  "readiness": "pending-infrastructure"
+}

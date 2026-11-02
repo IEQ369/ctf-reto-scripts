@@ -1,0 +1,311 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "category": {
+      "enum": [
+        "forensics",
+        "cryptography",
+        "reverse",
+        "mobile",
+        "web",
+        "blockchain"
+      ]
+    },
+    "difficulty": {
+      "enum": [
+        "intro",
+        "easy",
+        "medium",
+        "hard"
+      ]
+    },
+    "points": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10000
+    },
+    "delivery": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "artifact"
+            },
+            "build": {
+              "enum": [
+                "generated",
+                "static"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "build"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "service"
+            },
+            "service": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "management": {
+                  "enum": [
+                    "external",
+                    "container-optional"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "health_url": {
+                  "type": "string",
+                  "format": "uri",
+                  "pattern": "^https?://"
+                },
+                "state": {
+                  "enum": [
+                    "read-only",
+                    "mutable"
+                  ]
+                },
+                "isolation": {
+                  "enum": [
+                    "shared-readonly",
+                    "per-participant",
+                    "resettable-lab"
+                  ]
+                },
+                "deployment_notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 8000
+                },
+                "blockchain": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "chain_id": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 999999999
+                    },
+                    "network": {
+                      "const": "local-test"
+                    },
+                    "accounts": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 8000
+                    },
+                    "reset": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 8000
+                    },
+                    "contract_scope": {
+                      "enum": [
+                        "shared-readonly",
+                        "per-participant",
+                        "local-simulation"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "chain_id",
+                    "network",
+                    "accounts",
+                    "reset",
+                    "contract_scope"
+                  ]
+                }
+              },
+              "required": [
+                "management",
+                "url",
+                "health_url",
+                "state",
+                "isolation",
+                "deployment_notes"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "service"
+          ]
+        }
+      ]
+    },
+    "public_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$"
+      },
+      "uniqueItems": true,
+      "maxItems": 100
+    },
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8000
+      },
+      "maxItems": 50
+    },
+    "hints": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 8000
+      },
+      "maxItems": 50
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8000
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "seconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 600
+        },
+        "memory_mb": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 4096
+        },
+        "max_files": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "max_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        }
+      },
+      "required": [
+        "seconds",
+        "memory_mb",
+        "max_files",
+        "max_bytes"
+      ]
+    },
+    "readiness": {
+      "enum": [
+        "ready",
+        "pending-infrastructure"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "version",
+    "title",
+    "description",
+    "category",
+    "difficulty",
+    "points",
+    "delivery",
+    "public_files",
+    "requirements",
+    "hints",
+    "limits",
+    "readiness"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "delivery": {
+            "properties": {
+              "kind": {
+                "const": "artifact"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "public_files": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "category": {
+            "const": "blockchain"
+          },
+          "delivery": {
+            "properties": {
+              "kind": {
+                "const": "service"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "delivery": {
+            "properties": {
+              "service": {
+                "required": [
+                  "blockchain"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

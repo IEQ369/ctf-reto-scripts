@@ -1,0 +1,40 @@
+# Entornos y cachés Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Trabajo de autores y artefactos privados del evento: no son ejemplos del kit
+/mis-retos/
+/retos-evento/
+/work/
+/bundles/
+/state/
+
+# Secretos y datos operativos, en cualquier carpeta
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+keys.json
+token*.txt
+*.pem
+*.key
+*.log
+
+# Preferencias locales
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
