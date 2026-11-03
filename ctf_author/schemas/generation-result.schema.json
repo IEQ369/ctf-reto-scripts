@@ -3,7 +3,7 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": 2
+      "const": 3
     },
     "files": {
       "type": "array",
@@ -19,7 +19,7 @@
           },
           "size": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 0,
             "maximum": 536870912
           },
           "sha256": {
@@ -33,11 +33,28 @@
           "sha256"
         ]
       }
+    },
+    "status": {
+      "const": "ok"
+    },
+    "kind": {
+      "const": "artifact"
+    },
+    "challenge_id": {
+      "type": "string"
+    },
+    "challenge_version": {
+      "type": "integer",
+      "minimum": 1
     }
   },
   "required": [
     "schema_version",
-    "files"
+    "files",
+    "status",
+    "kind",
+    "challenge_id",
+    "challenge_version"
   ],
   "$schema": "https://json-schema.org/draft/2020-12/schema"
 }

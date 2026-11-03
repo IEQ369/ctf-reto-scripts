@@ -1,7 +1,18 @@
-# cryptography
+# Ejemplo cryptography — un reto, varias instancias
 
-Ejemplo educativo de contrato v2. No representa dificultad de torneo.
+Ejemplo funcional v3. Recupera la flag del material generado; la misma mecánica
+se reutiliza con cada flag recibida. No es un generador de retos diferentes.
 
-Preparar con `python tools/validate_challenge.py examples/cryptography --trusted-local`.
-Dependencias y entorno: Python 3.13; instalar el kit antes.
-El validador ejecuta la prueba privada que recupera la respuesta desde el artefacto.
+Desde la raíz del kit, con el entorno activado:
+
+```powershell
+python tools/validate_challenge.py examples/cryptography --trusted-local
+python tools/generate_instance.py examples/cryptography --flag 'CTF{A123}' --output work/cryptography-a --trusted-local
+```
+
+Solo los archivos de esa instancia son públicos. `WRITEUP_PRIVADO.md` explica
+la solución para el organizador. Este ejemplo es didáctico y su solución se publica
+como parte del kit; no copiar esa práctica para retos reales de la competencia.
+
+Dependencias: Python y el kit instalado. Reversing requiere la misma versión de
+Python al generar y analizar el bytecode. Consulta los requisitos en challenge.json.

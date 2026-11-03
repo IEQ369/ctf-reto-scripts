@@ -2,20 +2,25 @@ import argparse
 import json
 from ctf_author.runner import Runner
 from ctf_author.validation import validate
+from ctf_author.runtime import load_json, configure_stdio
 
 def main():
-    p = argparse.ArgumentParser(description='Valida entregas v2; ejecución desactivada por defecto')
+    configure_stdio()
+    p = argparse.ArgumentParser(description='Valida un reto v3 con dos flags ficticias y repetición')
     p.add_argument('challenge')
     group = p.add_mutually_exclusive_group()
     group.add_argument('--trusted-local', action='store_true')
     group.add_argument('--docker-image')
-    p.add_argument('--seed', default='ctf-preparation-v2')
-    p.add_argument('--bundle', help='Directorio nuevo para la entrega validada; contiene material PRIVADO')
+    p.add_argument('--seed', default='ctf-validation-v3')
     p.add_argument('--json', action='store_true')
-    p.add_argument('--check-service', action='store_true', help='Permite consulta de salud a la URL declarada')
+    p.add_argument('--parameters', help='Archivo JSON de opciones no secretas del reto')
     a = p.parse_args()
     runner = Runner('local' if a.trusted_local else 'docker' if a.docker_image else 'none', a.docker_image)
-    report = validate(a.challenge, runner, a.seed, a.bundle, a.check_service)
+    try:
+        parameters = load_json(a.parameters) if a.parameters else {}
+    except Exception:
+        p.exit(1, 'Archivo de parámetros inválido.\n')
+    report = validate(a.challenge, runner, a.seed, parameters)
     if a.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:

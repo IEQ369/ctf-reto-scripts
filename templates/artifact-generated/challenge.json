@@ -1,9 +1,9 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "id": "cambiar-id",
   "version": 1,
   "title": "Cambiar Id",
-  "description": "Analiza el material y recupera la respuesta común. Luego canjéala en la plataforma.",
+  "description": "Resuelve esta instancia del reto y recupera la flag que contiene.",
   "category": "forensics",
   "difficulty": "intro",
   "points": 100,
@@ -15,7 +15,7 @@
     "evidencia.bin"
   ],
   "requirements": [
-    "Python 3.13 y CTF Reto Scripts 2.0.0; sin dependencias adicionales"
+    "Python 3.13 y CTF Reto Scripts 3.0.0; sin dependencias adicionales"
   ],
   "hints": [],
   "limits": {
@@ -24,5 +24,8 @@
     "max_files": 20,
     "max_bytes": 52428800
   },
-  "readiness": "pending-infrastructure"
+  "readiness": "pending-infrastructure",
+  "reproducible": true,
+  "reproducibility_notes": "Misma flag, semilla, parámetros y entorno Python; fijar dependencias y herramientas externas.",
+  "source_paths": []
 }

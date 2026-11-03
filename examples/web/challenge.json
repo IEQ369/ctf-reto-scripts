@@ -1,9 +1,9 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "id": "web-01",
   "version": 1,
   "title": "Web 01",
-  "description": "Analiza el material y recupera la respuesta común. Luego canjéala en la plataforma.",
+  "description": "Resuelve esta instancia del reto y recupera la flag que contiene.",
   "category": "web",
   "difficulty": "intro",
   "points": 100,
@@ -14,13 +14,14 @@
       "url": "https://example.invalid/reto",
       "health_url": "https://example.invalid/health",
       "state": "read-only",
-      "isolation": "shared-readonly",
-      "deployment_notes": "PENDIENTE: responsable, URL real, TLS, prueba funcional y disponibilidad. El motor no despliega este servicio."
+      "isolation": "per-participant",
+      "deployment_notes": "PENDIENTE: implementar adaptador por instancia con flag externa; despliegue, endpoint, resolución y limpieza a cargo del integrador. No ejecutado por el kit."
     }
   },
   "public_files": [],
   "requirements": [
-    "Python 3.13 y CTF Reto Scripts 2.0.0; sin dependencias adicionales"
+    "CTF Reto Scripts 3.0.0 y Python 3.13",
+    "Infraestructura HTTP(S) aislada por instancia; aplicación y despliegue pendientes"
   ],
   "hints": [],
   "limits": {
@@ -29,5 +30,10 @@
     "max_files": 20,
     "max_bytes": 52428800
   },
-  "readiness": "pending-infrastructure"
+  "readiness": "pending-infrastructure",
+  "reproducible": true,
+  "reproducibility_notes": "Misma flag, semilla, parámetros y entorno Python; fijar dependencias y herramientas externas.",
+  "source_paths": [
+    "cleanup.py"
+  ]
 }

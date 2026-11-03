@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 import shutil
 from ctf_author.validation import schema_check
+from ctf_author.runtime import configure_stdio
 
+configure_stdio()
 p = argparse.ArgumentParser()
 p.add_argument('destination')
-p.add_argument('--template', choices=['artifact-generated','artifact-static','service','blockchain-service'], required=True)
+p.add_argument('--template', choices=['artifact-generated','service','blockchain-service'], default='artifact-generated')
 p.add_argument('--id', required=True)
 p.add_argument('--category', choices=['forensics','cryptography','reverse','mobile','web','blockchain'], required=True)
 a = p.parse_args()

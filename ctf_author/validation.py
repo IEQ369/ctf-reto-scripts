@@ -2,12 +2,10 @@
 import json
 from pathlib import Path
 import re
-import shutil
 import tempfile
-import urllib.request
 import zipfile
 from jsonschema import Draft202012Validator, FormatChecker
-from .runtime import ContractError, load_json, safe_name, file_hash, manifest_for, normalize
+from .runtime import ContractError, load_json, decode_json, safe_name, file_hash, parse_context
 from .runner import Runner
 
 
@@ -33,10 +31,6 @@ def check_tree(root):
 
 def inspect_public(path, budget):
     # Heurística defensiva, no demuestra ausencia de secretos ofuscados.
-    def scan(data):
-        if re.search(rb'CTF\{[^}\r\n]{1,256}\}', data):
-            raise ContractError('Posible flag individual en material compartido')
-    scan(path.read_bytes())
     if path.suffix.lower() in ('.zip', '.apk'):
         try:
             with zipfile.ZipFile(path) as archive:
@@ -45,19 +39,20 @@ def inspect_public(path, budget):
                 for item in archive.infolist():
                     if item.filename.startswith(('/', '\\')) or '..' in item.filename.replace('\\', '/').split('/'):
                         raise ContractError('Ruta peligrosa dentro del archivo comprimido')
-                    if Path(item.filename).name.lower() in ('answer.json', 'solucion_privada.md'):
+                    if Path(item.filename).name.lower() in ('answer.json', 'solucion_privada.md', 'writeup_privado.md', 'test_generate.py', 'generate.py', 'challenge.json'):
                         raise ContractError('Material privado dentro del archivo comprimido')
                     if (item.external_attr >> 16) & 0o170000 == 0o120000:
                         raise ContractError('Enlace dentro del archivo comprimido')
-                    scan(archive.read(item))
+                    archive.read(item)  # Comprueba integridad; no busca flags, que aquí son válidas.
         except (zipfile.BadZipFile, RuntimeError):
             raise ContractError('ZIP/APK inválido o cifrado; necesita revisión especializada') from None
 
 
-def check_outputs(public, private, manifest, spec):
+def check_outputs(public, manifest, spec):
     check_tree(public)
-    check_tree(private)
     schema_check(manifest, 'generation-result')
+    if manifest['status'] != 'ok' or manifest['kind'] != 'artifact' or manifest['challenge_id'] != spec['id'] or manifest['challenge_version'] != spec['version']:
+        raise ContractError('El resultado no corresponde al reto solicitado')
     names = [safe_name(f['name']) for f in manifest['files']]
     if len({n.casefold() for n in names}) != len(names):
         raise ContractError('Nombres públicos duplicados')
@@ -73,23 +68,12 @@ def check_outputs(public, private, manifest, spec):
         if path.stat().st_size != record['size'] or file_hash(path) != record['sha256']:
             raise ContractError('Tamaño o SHA-256 incorrecto')
         inspect_public(path, limits['max_bytes'])
-    if {p.name for p in private.iterdir()} != {'answer.json'}:
-        raise ContractError('La salida privada debe contener exclusivamente answer.json')
-    if (private / 'answer.json').stat().st_size > 16384:
-        raise ContractError('Respuesta privada demasiado grande')
-    answer = load_json(private / 'answer.json')
-    schema_check(answer, 'answer')
-    if not normalize(answer['answer'], answer['comparison']):
-        raise ContractError('Respuesta vacía después de normalizar')
-    if 'CTF{' in answer['answer']:
-        raise ContractError('La respuesta común no debe usar el formato de flags personales')
-    return answer
 
 
 def read_spec(source):
     source = Path(source).resolve()
     check_tree(source)
-    for name in ('challenge.json', 'README.md', 'SOLUCION_PRIVADA.md'):
+    for name in ('challenge.json', 'README.md', 'WRITEUP_PRIVADO.md', 'generate.py', 'test_generate.py'):
         if not (source / name).is_file() or not (source / name).stat().st_size:
             raise ContractError('Falta archivo obligatorio: ' + name)
     spec = load_json(source / 'challenge.json')
@@ -106,97 +90,96 @@ def read_spec(source):
     return spec
 
 
-def build_once(source, spec, runner, destination, seed):
-    public, private = destination / 'public', destination / 'private'
-    public.mkdir(parents=True)
-    private.mkdir()
-    # Contenedor no-root necesita escribir en directorios de trabajo dedicados.
+def build_once(source, spec, runner, destination, seed, flag, parameters=None):
+    # Cada invocación utiliza un directorio nuevo: nunca sobrescribe otra instancia.
+    destination = Path(destination).absolute()
+    if destination.exists():
+        raise ContractError('El destino de la instancia ya existe')
+    destination.mkdir(parents=True)
     if runner.mode == 'docker':
-        public.chmod(0o777)
-        private.chmod(0o777)
-    request = {'schema_version': 2, 'challenge_id': spec['id'], 'challenge_version': spec['version'],
-               'seed': seed, 'output_dir': str(public.resolve()), 'private_dir': str(private.resolve())}
-    if spec['delivery']['build'] == 'static':
-        static = source / 'public'
-        if not static.is_dir() or {p.name for p in static.iterdir()} != set(spec['public_files']):
-            raise ContractError('Entrega estática contiene archivos no declarados o faltantes')
-        for name in spec['public_files']:
-            shutil.copyfile(static / name, public / name)
-        shutil.copyfile(source / 'private' / 'answer.json', private / 'answer.json')
-        manifest = manifest_for(public, spec['public_files'])
-    else:
-        if not (source / 'generate.py').is_file():
-            raise ContractError('Falta generate.py')
-        manifest = json.loads(runner.execute(source, 'generate.py', request, spec['limits']))
-    answer = check_outputs(public, private, manifest, spec)
-    return request, manifest, answer
+        destination.chmod(0o777)
+    request = {'schema_version': 3, 'challenge_id': spec['id'], 'challenge_version': spec['version'],
+               'seed': seed, 'flag': flag, 'parameters': parameters if parameters is not None else {},
+               'output_dir': str(destination)}
+    parse_context(request)
+    manifest = decode_json(runner.execute(source, 'generate.py', request, spec['limits']))
+    check_outputs(destination, manifest, spec)
+    return request, manifest
 
 
-def validate(source, runner=None, seed='ctf-preparation-v2', bundle=None, check_service=False):
+def resolve_instance(source, spec, runner, request, manifest):
+    # El solucionador NO recibe la flag esperada. Debe extraerla del material público.
+    solver_request = {key: value for key, value in request.items() if key != 'flag'}
+    result = decode_json(runner.execute(source, 'test_generate.py', solver_request, spec['limits']))
+    schema_check(result, 'resolution-result')
+    check_outputs(Path(request['output_dir']), manifest, spec)
+    return result['recovered_flag']
+
+
+def verify_instance(source, spec, runner, request, manifest, expected):
+    if resolve_instance(source, spec, runner, request, manifest) != expected:
+        raise ContractError('La resolución no recuperó exactamente la flag esperada')
+
+
+def validate(source, runner=None, seed='ctf-validation-v3', parameters=None):
     runner = runner or Runner()
     report = {'status': 'RECHAZADO', 'errors': [], 'warnings': [], 'checks': []}
     try:
         source = Path(source).resolve()
         spec = read_spec(source)
-        report['checks'].append('Estructura, metadatos, categorías y esquema v2')
-        if spec['readiness'] != 'ready':
-            report['status'] = 'REVISIÓN MANUAL'
-            report['warnings'].append('Autor declara infraestructura o compilación pendiente')
-            return report
+        report['checks'].append('Estructura y contrato v3 de un único reto')
         if spec['delivery']['kind'] == 'service':
             service = spec['delivery']['service']
-            if service['state'] == 'mutable' and service['isolation'] == 'shared-readonly':
-                raise ContractError('Estado mutable incompatible con aislamiento declarado')
+            if service['isolation'] != 'per-participant':
+                raise ContractError('El servicio personalizado requiere aislamiento por instancia')
             report['status'] = 'REVISIÓN MANUAL'
-            report['warnings'].append('Servicio requiere comprobación funcional y revisión de aislamiento por su responsable')
-            if check_service:
-                # Solo por acción administrativa explícita; nunca al importar metadatos desde HTTP.
-                with urllib.request.urlopen(service['health_url'], timeout=5) as response:
-                    if response.status != 200:
-                        raise ContractError('Comprobación de salud fallida')
-                report['checks'].append('Salud HTTP 200 comprobada; no equivale a solución funcional')
+            report['warnings'].append('Adaptador de servicio: desplegar, resolver, verificar aislamiento y limpiar externamente; no ejecutado por este kit')
             return report
-        if not (source / 'test_generate.py').is_file():
-            raise ContractError('Falta test_generate.py')
+        if spec['readiness'] != 'ready':
+            report['status'] = 'REVISIÓN MANUAL'
+            report['warnings'].append('Implementación o infraestructura declarada pendiente')
+            return report
         if runner.mode == 'none':
             report['status'] = 'REVISIÓN MANUAL'
-            report['warnings'].append('No se ejecutó código del autor. Elegir sandbox o --trusted-local tras revisión')
+            report['warnings'].append('Seleccionar --trusted-local para código revisado o --docker-image')
             return report
+        report['warnings'].append('La prueba del autor requiere revisión humana; no certifica seguridad ni dificultad')
         if runner.mode == 'local':
-            report['warnings'].append('Código confiable ejecutado localmente: sin aislamiento ni cuotas duras de memoria/disco')
+            report['warnings'].append('Ejecución local sin aislamiento ni cuotas duras de memoria/disco')
         else:
-            report['warnings'].append('Docker limita memoria/CPU/procesos; configurar cuota de disco del trabajador')
+            report['warnings'].append('Docker requiere imagen preparada y cuota externa de disco; no probado en la entrega')
+        # Flags ficticias de prueba creadas por el validador, nunca por el generador.
+        import secrets
+        flags = ['CTF{test_' + secrets.token_hex(16) + '}' for _ in range(2)]
         with tempfile.TemporaryDirectory(prefix='ctf-author-') as folder:
             root = Path(folder)
-            first = build_once(source, spec, runner, root / 'first', seed)
-            second = build_once(source, spec, runner, root / 'second', seed)
-            if first[1:] != second[1:]:
-                raise ContractError('Generación no reproducible')
-            # Comprobar también bytes privados: formatos o timestamps variables cuentan.
-            if (root / 'first/private/answer.json').read_bytes() != (root / 'second/private/answer.json').read_bytes():
-                raise ContractError('Respuesta privada no reproducible')
-            report['checks'].extend(['Manifiesto, checksums, rutas y separación público/privado',
-                                     'Reproducibilidad y respuesta común válida', 'Inspección heurística de flags'])
-            before = first[1]
-            result = json.loads(runner.execute(source, 'test_generate.py', first[0], spec['limits']))
-            if set(result) != {'tests_passed'} or type(result['tests_passed']) is not int or result['tests_passed'] < 1:
-                raise ContractError('La prueba del autor debe declarar tests_passed positivo')
-            check_outputs(root / 'first/public', root / 'first/private', before, spec)
-            if load_json(root / 'first/private/answer.json') != first[2]:
-                raise ContractError('La prueba modificó la respuesta privada')
-            report['checks'].append('Prueba de resolución del autor ejecutada')
-            report['status'] = 'APROBADO'
-            if bundle:
-                destination = Path(bundle).resolve()
-                if destination.exists():
-                    raise ContractError('El destino del paquete preparado ya existe')
-                shutil.copytree(root / 'first', destination)
-                for name, data in [('challenge.json', spec), ('manifest.json', first[1]), ('validation.json', report)]:
-                    (destination / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-        return report
+            first = build_once(source, spec, runner, root/'first', seed, flags[0], parameters)
+            repeat = build_once(source, spec, runner, root/'repeat', seed, flags[0], parameters)
+            other = build_once(source, spec, runner, root/'other', seed, flags[1], parameters)
+            if spec['reproducible'] and first[1] != repeat[1]:
+                raise ContractError('Generación no reproducible con iguales entradas')
+            if not spec['reproducible']:
+                report['warnings'].append('Reproducibilidad exceptuada: requiere revisión manual del entorno y justificación')
+            if first[1] == other[1]:
+                raise ContractError('Flags distintas produjeron material idéntico')
+            for request, manifest in (first, repeat, other):
+                verify_instance(source, spec, runner, request, manifest, request['flag'])
+            # Verificación negativa por el mismo camino usado para aceptar una instancia.
+            try:
+                verify_instance(source, spec, runner, first[0], first[1], flags[1])
+            except ContractError:
+                pass
+            else:
+                raise ContractError('La prueba aceptó una flag ajena')
+            report['checks'].extend(['Tres ejecuciones independientes del mismo generador',
+                'Dos flags ficticias distintas recuperadas desde sus respectivos archivos',
+                'Repetición con iguales parámetros comprobada', 'Flag ajena rechazada',
+                'Manifiesto, hashes, tamaños y separación de material privado'])
+            report['status'] = 'APROBADO' if spec['reproducible'] else 'REVISIÓN MANUAL'
     except ContractError as error:
         report['errors'].append(str(error))
+        report['status'] = 'RECHAZADO'
     except Exception:
         report['errors'].append('Error de estructura, ejecución o infraestructura; detalles privados suprimidos')
-    report['status'] = 'RECHAZADO'
+        report['status'] = 'RECHAZADO'
     return report

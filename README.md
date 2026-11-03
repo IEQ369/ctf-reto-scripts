@@ -1,73 +1,80 @@
-# CTF Reto Scripts
+# CTF Reto Scripts — contrato v3
 
-**Plantillas y herramientas para crear, probar y entregar retos CTF.**
+Kit para que cada autor programe **un generador por reto**. Dos retos significan dos
+carpetas, cada una con su `generate.py`. Ejecutar el mismo generador con otra flag
+produce otra instancia de la misma mecánica; el kit no inventa retos.
 
-Repositorio: [IEQ369/ctf-reto-scripts](https://github.com/IEQ369/ctf-reto-scripts). Protocolo de autores: v2.
+El organizador proporciona la flag. El generador no crea flags, no conoce usuarios
+y no necesita una web, una base de datos ni un motor de puntuaciones.
 
-## ¿Por dónde empiezo?
+## Inicio rápido (PowerShell)
 
-1. Descarga el repositorio con **Code → Download ZIP**, o usa `git clone https://github.com/IEQ369/ctf-reto-scripts.git`.
-2. Instala el kit siguiendo los pasos de abajo.
-3. Lee [Cómo crear un reto](COMO_CREAR_UN_RETO.md) y copia una plantilla.
-4. Valida tu reto y entrega su carpeta al organizador por el canal privado acordado.
+Desde la carpeta del repositorio, con Python 3.11 o superior:
 
-Consulta [el contrato de entrega](CONTRATO_AUTORES.md),
-[las diferencias por categoría](GUIA_POR_CATEGORIA.md) y
-[cómo colaborar en este repositorio](CONTRIBUTING.md).
-
-Entrega para autores de un CTF universitario. Cada reto produce **un mismo material y una
-misma respuesta para todos**. La web canjea esa respuesta por una flag personal que
-asigna el motor. El generador nunca conoce usuarios ni flags personales.
-
-## Primer uso
-
-Recomendado: Python 3.13, entorno virtual dedicado. El runtime admite Python 3.11+;
-el bytecode del ejemplo reverse debe analizarse con la misma versión que lo compiló.
-Desde esta carpeta:
-
-```text
-python -m venv .venv
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+$py = ".\.venv\Scripts\python.exe"
 ```
 
-Windows PowerShell: `.\.venv\Scripts\Activate.ps1` (usar `./.venv/Scripts/python.exe`
-directamente si la política de PowerShell impide activar). Linux/macOS:
-`source .venv/bin/activate`. Luego:
+Ejecutar **el mismo reto forense** con dos flags ficticias:
 
-```text
-python -m pip install -e .
-python tools/validate_challenge.py examples/forensics --trusted-local
-python -m unittest discover -s tests -v
-python tools/create_challenge.py mis-retos/forense-02 --template artifact-generated --id forense-02 --category forensics
+```powershell
+& $py tools/generate_instance.py examples/forensics --flag 'CTF{A123}' --output work/a --trusted-local
+& $py tools/generate_instance.py examples/forensics --flag 'CTF{B987}' --output work/b --trusted-local
+& $py tools/validate_challenge.py examples/forensics --trusted-local
 ```
 
-`--trusted-local` autoriza ejecutar el código revisado del ejemplo en tu máquina;
-no es seguro para entregas desconocidas. Sin esa opción se hace revisión estructural
-y se devuelve REVISIÓN MANUAL antes de ejecutar. Consulta SEGURIDAD.md.
+`work/a/evidencia.zip` contiene `CTF{A123}` en el comentario del ZIP;
+`work/b/evidencia.zip` contiene `CTF{B987}`. Ambos usan la misma mecánica.
+El comando de generación también resuelve la instancia y comprueba su flag.
+Las salidas deben ser carpetas nuevas: no se sobrescriben instancias existentes.
 
-Completa la función `construir_reto(contexto)` y la prueba de resolución. Sigue
-COMO_CREAR_UN_RETO.md. No necesitas la plataforma ni el motor para trabajar.
+`--trusted-local` ejecuta código en tu equipo: úsalo con estos ejemplos o código que
+hayas revisado. Las flags de este ejemplo son ficticias. Para una flag real usa un
+canal privado de entrada, no el historial del shell.
 
-## Archivos del kit
+## Crear y entregar tu propio reto
 
-- `templates/`: generated, static, service y blockchain-service.
-- `examples/`: seis categorías; los tres primeros ejemplos son ejecutables.
-- `ctf_author/runtime.py`: trabajo repetitivo de los generadores.
-- `ctf_author/schemas/`: cuatro esquemas JSON Schema 2020-12 instalables junto al código.
-- `ctf_author/validation.py`: inspección y preparación offline.
-- `tools/`: crear y validar entregas.
-- `tests/`: pruebas del contrato y del validador.
+```powershell
+& $py tools/create_challenge.py mis-retos/forense-03 --id forense-03 --category forensics
+# Completar mecánica, prueba, documentación y metadatos; marcar readiness=ready.
+& $py tools/validate_challenge.py mis-retos/forense-03 --trusted-local
+& $py tools/package_challenge.py mis-retos/forense-03 --output bundles/forense-03.zip --trusted-local
+```
 
-Los esquemas están dentro del paquete Python para que funcionen también después de
-instalarlo, sin depender de la carpeta actual. Cada entrega depende de este runtime
-versionado; no se copian implementaciones del validador a cada reto.
+La plantilla inicialmente **no funciona**: indica exactamente dónde programar.
+El ZIP de entrega contiene fuentes y write-up privado; se entrega al organizador,
+**no a participantes**. Las descargas del participante son únicamente los archivos
+de una instancia generada, enumerados en su manifiesto.
 
-El kit usa jsonschema para validar los contratos, no un validador JSON parcial hecho
-a mano. La instalación de dependencias ocurre durante la preparación del entorno,
-nunca dentro de un generador. El repositorio incluye el código y los ejemplos, no la .venv.
+## Qué leer
 
-El paquete instalable conserva el identificador técnico `ctf-author-kit` y los imports
-`ctf_author`, para mantener la compatibilidad con los scripts y el motor existentes.
-El nombre de la carpeta y del repositorio es `ctf-reto-scripts`.
+- [Guía de autores](GUIA_AUTORES.md): crear, resolver, probar y entregar un reto.
+- [Contrato técnico](CONTRATO_TECNICO.md): JSON, integración externa y servicios.
+- [Seguridad](SEGURIDAD.md): separación de material y límites de la validación.
+- [Resultados de pruebas](docs/RESULTADOS_PRUEBAS.md): comprobaciones realmente ejecutadas.
+- [Historial v2](docs/HISTORIAL_V2.md): información anterior conservada; no es la guía vigente.
 
-Los tres ejemplos introductorios muestran la interfaz, no dificultad de torneo.
-Ver RESULTADOS_PRUEBAS.md para resultados reales y pendientes.
+## Estructura del repositorio
+
+```text
+README.md / GUIA_AUTORES.md / CONTRATO_TECNICO.md / SEGURIDAD.md
+ctf_author/              runtime, validación, ejecución y empaquetado
+  schemas/              contratos JSON v3
+tools/                  crear, generar, validar y empaquetar
+templates/              artifact-generated, service, blockchain-service
+examples/               ejemplos y borradores identificados por categoría
+tests/                  pruebas del kit y de CLI
+docs/                   resultados actuales e historial anterior
+```
+
+Funcionan los ejemplos de archivos **forensics, cryptography y reverse**. Mobile
+requiere compilación Android. Web y blockchain incluyen contratos de integración
+y adaptadores incompletos, no servicios desplegados. Permanecen en REVISIÓN MANUAL.
+OSINT no forma parte de las categorías oficiales del kit.
+
+**Migración:** v3 sustituye la respuesta común de v2 por una flag externa por instancia.
+El motor anterior y los retos v2 no son compatibles sin adaptación. No se modificó
+el proyecto separado del motor. Un reto existente debe migrarse conscientemente;
+no basta con cambiar el número de versión.

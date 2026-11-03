@@ -1,1 +1,1 @@
-"""Contrato v2: artefactos comunes, sin identidad ni flags personales."""
+"""Contrato v3: un generador, un reto, una flag externa por instancia."""

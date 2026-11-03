@@ -32,10 +32,9 @@ class Runner:
                    '--tmpfs', '/tmp:rw,noexec,nosuid,size=64m',
                    '-v', f'{source}:/challenge:ro', '-v', f'{kit}:/kit:ro',
                    '-v', f"{request['output_dir']}:/public:rw",
-                   '-v', f"{request['private_dir']}:/private:rw",
                    '-e', 'PYTHONPATH=/kit', '-e', 'PYTHONDONTWRITEBYTECODE=1',
                    '-w', '/challenge', '-i', self.image, 'python', script]
-            payload.update(output_dir='/public', private_dir='/private')
+            payload.update(output_dir='/public')
         else:
             cmd = [sys.executable, '-B', str(source / script)]
         # Archivos temporales evitan almacenar salida ilimitada en memoria.

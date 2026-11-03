@@ -1,21 +1,22 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "id": "mobile-01",
   "version": 1,
   "title": "Mobile 01",
-  "description": "Analiza el material y recupera la respuesta común. Luego canjéala en la plataforma.",
+  "description": "Resuelve esta instancia del reto y recupera la flag que contiene.",
   "category": "mobile",
   "difficulty": "intro",
   "points": 100,
   "delivery": {
     "kind": "artifact",
-    "build": "static"
+    "build": "generated"
   },
   "public_files": [
     "app-debug.apk"
   ],
   "requirements": [
-    "Python 3.13 y CTF Reto Scripts 2.0.0; sin dependencias adicionales"
+    "CTF Reto Scripts 3.0.0 y Python 3.13",
+    "JDK 17, Android SDK 35, Gradle 8.9 y Android Gradle Plugin 8.7.3; preparación y comprobación externas pendientes"
   ],
   "hints": [],
   "limits": {
@@ -24,5 +25,10 @@
     "max_files": 20,
     "max_bytes": 52428800
   },
-  "readiness": "pending-infrastructure"
+  "readiness": "pending-infrastructure",
+  "reproducible": true,
+  "reproducibility_notes": "Misma flag, semilla, parámetros y entorno Python; fijar dependencias y herramientas externas.",
+  "source_paths": [
+    "android"
+  ]
 }

@@ -1,37 +1,60 @@
-# Límites del kit
+# Seguridad y límites
 
-`subprocess` no aísla. La ejecución local es exclusivamente para código revisado
-y se selecciona explícitamente. El filtro de variables de entorno reduce exposición
-accidental, pero no impide que código local lea archivos, credenciales o acceda a red.
-No ejecutar entregas desconocidas en el servidor del evento ni en un equipo con secretos.
+## Material público y privado
 
-El adaptador Docker monta fuente y kit como solo lectura, dos salidas dedicadas,
-elimina capacidades, ejecuta como no-root, deshabilita red, fija memoria/swap, CPU
-y cantidad de procesos, usa raíz de solo lectura y elimina el contenedor al vencer
-el timeout. Requiere daemon, imagen previamente preparada y permisos de montaje
-compatibles. No se ha probado aquí por ausencia de Docker; confirmar comportamiento
-en Linux antes de confiar en él. Una VM desechable es otra opción operativa.
+- **Participante:** únicamente archivos declarados de su instancia o endpoint aprobado.
+- **Organizador:** fuentes, pruebas, write-up y reporte del ZIP de entrega privada.
+- **Programa externo:** flag esperada y datos necesarios para su propia administración.
 
-Los montajes de salida y logs aún requieren cuota de disco del trabajador. No se
-promete aislamiento contra vulnerabilidades del kernel/contenedor. Localmente el
-timeout no mata necesariamente procesos nietos: nunca usar ese modo con autores
-desconocidos. El tamaño final, cantidad de archivos y checksums se verifican después.
+La flag debe existir en la mecánica del desafío: eso es intencional. No debe aparecer
+innecesariamente en stdout de generación, errores, nombres de archivo o registros.
+El stdout del solucionador contiene la flag recuperada y es estrictamente privado.
+Para flags reales, usa stdin del protocolo o `--flag-file`; `--flag` es una comodidad
+para datos ficticios y queda visible en historial/argumentos del proceso.
 
-Los bundles son administrativos, no firmas de confianza. Un informe APROBADO no
-impide que alguien modifique el bundle después; el motor debe verificar su contenido
-al importar y aceptar bundles solo de un canal administrativo revisado.
+El empaquetador usa una lista de fuentes explícita y excluye cachés/configuraciones
+locales conocidas. El ZIP resultante sí contiene soluciones: no distribuirlo a los
+participantes. No poner retos reales con sus soluciones en el repositorio público.
+Las bases de datos, logs, bytecode y claves sintéticas declaradas como assets son
+material válido de retos: el empaquetador no los bloquea por extensión. El autor
+debe comprobar que no contienen datos reales ni credenciales operativas.
 
-La inspección busca el patrón CTF{...} en archivos y entradas ZIP/APK, impide incluir
-answer.json y SOLUCION_PRIVADA.md con esos nombres, y limita descompresión. Esto no
-demuestra ausencia de secretos cifrados, codificados o renombrados. Revisar manualmente
-qué se publica; que la respuesta común sea recuperable es el objetivo del reto.
-Archivos comprimidos cifrados requieren una política especializada; esta versión
-los rechaza en lugar de aprobarlos sin poder inspeccionarlos.
+## Ejecución de código
 
-No publicar material personal real. No usar secretos del evento en los ejemplos.
-Preservar las claves y la BD del motor con permisos del SO y backups. Windows
-requiere ACL adecuadas: chmod no sustituye ACL. El usuario de servicio debe ser
-dedicado. Ejecutar API y validación en entornos separados.
+El modo predeterminado del validador no ejecuta código. `--trusted-local` significa
+que confías en el generador y su prueba: ambos pueden acceder a tu equipo. Un
+subprocess no es un sandbox. Hay timeout, pero no cuotas duras de memoria/disco ni
+garantía de detener procesos descendientes en ejecución local.
 
-Documentación técnica: [JSON Schema](https://python-jsonschema.readthedocs.io/en/stable/validate/),
-[restricciones Docker](https://docs.docker.com/engine/containers/resource_constraints/).
+El runner Docker opcional limita memoria, CPU, procesos, red, privilegios y montajes.
+Requiere imagen preparada con dependencias; no instala herramientas automáticamente.
+No fue ejecutado en esta entrega. Hace falta una cuota externa de disco y revisión
+del host. No usar servicios de terceros ni credenciales de producción para probar.
+
+## Alcance de las comprobaciones
+
+Se revisan esquema, nombres, enlaces, archivos declarados, tamaños, SHA-256 y
+reproducibilidad. Se inspeccionan nombres y límites dentro de ZIP/APK, rechazando
+material privado reconocible, rutas peligrosas y enlaces. Los ZIP cifrados no están
+admitidos por esta inspección automática. Otros formatos y archivos anidados exigen
+revisión específica.
+
+No existe detección universal de secretos o write-ups renombrados/ofuscados. Los
+límites de archivos se comprueban después de generar y no evitan por sí mismos que
+un script llene el disco. La salida de subprocess también requiere cuota externa.
+
+El solucionador recibe archivos sin la flag esperada, pero sigue siendo código del
+autor. Podría falsear una prueba o leer otros recursos en modo local: debe revisarse.
+APROBADO no certifica ausencia de vulnerabilidades, calidad, dificultad o resistencia
+a colaboración. Este repositorio no rastrea participantes ni valida puntuaciones.
+
+## Revisión antes de aceptar un reto
+
+Comprobar enunciado y solución, versiones de herramientas, dependencias fijadas,
+contenido público, recuperación de dos flags diferentes y aislamiento de instancias.
+En servicios, exigir despliegue, resolución real, limpieza y pruebas de aislamiento.
+No aprobar por la mera presencia de un manifiesto o respuesta HTTP 200.
+
+Si falla una generación, no publicar los archivos parciales. El responsable de
+ejecución decide su conservación privada o limpieza. Nunca sobrescribir una instancia
+previa para intentar corregir otra.

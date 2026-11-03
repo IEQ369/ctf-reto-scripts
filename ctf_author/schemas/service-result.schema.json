@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 3
+    },
+    "status": {
+      "const": "ok"
+    },
+    "kind": {
+      "const": "service"
+    },
+    "challenge_id": {
+      "type": "string"
+    },
+    "challenge_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "service": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://"
+        },
+        "instance_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,128}$"
+        }
+      },
+      "required": [
+        "endpoint",
+        "instance_ref"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "kind",
+    "challenge_id",
+    "challenge_version",
+    "service"
+  ]
+}

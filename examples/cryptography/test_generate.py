@@ -5,8 +5,6 @@ import codecs
 
 request = json.load(sys.stdin)
 public = Path(request["output_dir"])
-private = Path(request["private_dir"])
 cipher = json.loads((public/'mensaje.json').read_text())['ciphertext']
-answer = codecs.decode(cipher, 'rot_13')
-assert answer == json.loads((private/'answer.json').read_text())['answer']
-print(json.dumps({"tests_passed": 1}))
+recovered = codecs.decode(cipher, 'rot_13')
+print(json.dumps({"schema_version": 3, "recovered_flag": recovered}))
