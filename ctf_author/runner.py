@@ -10,8 +10,11 @@ from .runtime import ContractError
 
 
 class Runner:
-    def __init__(self, mode='none', image=None):
+    def __init__(self, mode='none', image=None, environment=None):
         self.mode, self.image = mode, image
+        self.environment = Path(environment).resolve() if environment else None
+        if self.environment and mode != 'local':
+            raise ContractError('--environment requiere --trusted-local; Docker usa su propia imagen')
         if mode == 'docker' and not image:
             raise ContractError('Indicar imagen preparada para ejecución aislada')
 
@@ -21,7 +24,7 @@ class Runner:
         source = Path(source).resolve()
         kit = Path(__file__).resolve().parent.parent
         environment = {k: v for k, v in os.environ.items() if k in ('SYSTEMROOT', 'WINDIR', 'PATH', 'TEMP', 'TMP')}
-        environment.update(PYTHONPATH=str(kit), PYTHONIOENCODING='utf-8', PYTHONDONTWRITEBYTECODE='1')
+        environment.update(PYTHONPATH=str(kit), PYTHONIOENCODING='utf-8', PYTHONDONTWRITEBYTECODE='1', PYTHONNOUSERSITE='1')
         container = 'ctf-check-' + secrets.token_hex(8)
         payload = dict(request)
         if self.mode == 'docker':
@@ -36,7 +39,13 @@ class Runner:
                    '-w', '/challenge', '-i', self.image, 'python', script]
             payload.update(output_dir='/public')
         else:
-            cmd = [sys.executable, '-B', str(source / script)]
+            executable = Path(sys.executable)
+            if self.environment:
+                from .environments import checked_python
+                executable = checked_python(self.environment, source)
+                environment['VIRTUAL_ENV'] = str(self.environment)
+                environment['PATH'] = str(executable.parent) + os.pathsep + environment.get('PATH', '')
+            cmd = [str(executable), '-B', str(source / script)]
         # Archivos temporales evitan almacenar salida ilimitada en memoria.
         # La cuota de disco del trabajador es responsabilidad del sandbox externo.
         with tempfile.TemporaryFile() as out, tempfile.TemporaryFile() as err:

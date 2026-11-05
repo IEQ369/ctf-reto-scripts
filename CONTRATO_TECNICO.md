@@ -133,6 +133,38 @@ un único contrato mutable compartido no cumple este contrato de personalizació
 
 ## Entrega al futuro programa del servidor
 
+El formato de entrada/salida v3 no cambia. Se añade un archivo de autor opcional
+`environment.json`, validado por `schemas/environment.schema.json`, sin campos nuevos
+en el contexto del generador. Los retos existentes que no lo contienen siguen siendo
+válidos; su preparación avisa que la versión de Python debe revisarse en el README.
+
+`prepare_environment.py` crea un venv por reto, instala su `requirements.txt`, ejecuta
+`pip check` y registra Python, versiones instaladas y hashes de requisitos/configuración
+en `ctf-environment.json` dentro del entorno local. No ejecuta el generador ni instala
+SDK del sistema. `--environment` selecciona ese intérprete para generar, resolver y
+empaquetar; exige `--trusted-local`. Docker continúa usando su propia imagen.
+
+El registro vincula entorno, carpeta, ID y versión; un cambio de requisitos o ubicación
+obliga a prepararlo de nuevo. No certifica que nadie haya modificado manualmente el venv.
+Las herramientas suministran el runtime del kit mediante PYTHONPATH y desactivan el
+site-packages del usuario. No se instala todo el kit dentro del entorno del reto.
+La invocación directa fuera de estas herramientas requiere hacer accesible el runtime
+en PYTHONPATH. Un adaptador que use `run_service` necesita además `jsonschema` para
+validar su descriptor: debe declararlo como dependencia. Sus pruebas son manuales.
+
+`verify_package.py` lee la entrega sin extraerla ni ejecutar código. Acepta ZIP STORED
+o DEFLATED, rechaza cifrado, enlaces, entradas duplicadas/ambiguas, recursos faltantes,
+rutas peligrosas y archivos ajenos a las fuentes declaradas. Por defecto admite 4096
+entradas y 512 MiB descomprimidos; `--max-files` y `--max-bytes` permiten ajustar esos
+límites tanto al empaquetar como al verificar. Los metadatos tienen un límite de 1 MiB.
+Los directorios declarados en `source_paths` deben aportar archivos; los directorios
+vacíos de trabajo deben crearse durante la preparación/generación.
+
+Salida estática: `VERIFICADO` y código 0, o `RECHAZADO` y código 1. No equivale a aprobación
+funcional. Se valida CRC y se calcula SHA-256 del ZIP completo; solo `--sha256` con un
+valor externo confiable detecta una reescritura coherente de la entrega. No se añade
+un manifiesto redundante ni se confía en la aprobación declarada en `VALIDACION.json`.
+
 El organizador recibe el ZIP PRIVADO de fuentes, con el reto, write-up, prueba,
 assets, dependencias declaradas y reporte de validación. Después de extraerlo en un
 entorno confiable y revisar dependencias, el futuro programa necesita:

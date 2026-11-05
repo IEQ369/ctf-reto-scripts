@@ -9,6 +9,9 @@ y no necesita una web, una base de datos ni un motor de puntuaciones.
 
 ## Inicio rápido (PowerShell)
 
+Descarga **Code → Download ZIP** del repositorio y descomprímelo, o clónalo con
+`git clone https://github.com/IEQ369/ctf-reto-scripts.git`.
+
 Desde la carpeta del repositorio, con Python 3.11 o superior:
 
 ```powershell
@@ -39,14 +42,22 @@ canal privado de entrada, no el historial del shell.
 ```powershell
 & $py tools/create_challenge.py mis-retos/forense-03 --id forense-03 --category forensics
 # Completar mecánica, prueba, documentación y metadatos; marcar readiness=ready.
-& $py tools/validate_challenge.py mis-retos/forense-03 --trusted-local
-& $py tools/package_challenge.py mis-retos/forense-03 --output bundles/forense-03.zip --trusted-local
+& $py tools/prepare_environment.py mis-retos/forense-03 --output work/env-forense-03 --trusted-local
+& $py tools/validate_challenge.py mis-retos/forense-03 --environment work/env-forense-03 --trusted-local
+& $py tools/package_challenge.py mis-retos/forense-03 --output bundles/forense-03.zip --environment work/env-forense-03 --trusted-local
+& $py tools/verify_package.py bundles/forense-03.zip
 ```
 
 La plantilla inicialmente **no funciona**: indica exactamente dónde programar.
 El ZIP de entrega contiene fuentes y write-up privado; se entrega al organizador,
 **no a participantes**. Las descargas del participante son únicamente los archivos
 de una instancia generada, enumerados en su manifiesto.
+
+Cada reto puede usar un entorno Python distinto; sus dependencias no se instalan
+en el entorno de los demás. `environment.json` declara la versión del intérprete
+y las herramientas externas; `requirements.txt` fija las bibliotecas del reto.
+Los venv separan dependencias, no aíslan código ni SDK del sistema.
+`VERIFICADO` comprueba el ZIP sin ejecutar código; no equivale a `APROBADO` funcional.
 
 ## Qué leer
 
@@ -62,7 +73,7 @@ de una instancia generada, enumerados en su manifiesto.
 README.md / GUIA_AUTORES.md / CONTRATO_TECNICO.md / SEGURIDAD.md
 ctf_author/              runtime, validación, ejecución y empaquetado
   schemas/              contratos JSON v3
-tools/                  crear, generar, validar y empaquetar
+tools/                  crear, preparar entorno, generar, validar, empaquetar y verificar
 templates/              artifact-generated, service, blockchain-service
 examples/               ejemplos y borradores identificados por categoría
 tests/                  pruebas del kit y de CLI

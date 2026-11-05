@@ -7,6 +7,8 @@ import zipfile
 from jsonschema import Draft202012Validator, FormatChecker
 from .runtime import ContractError, load_json, decode_json, safe_name, file_hash, parse_context
 from .runner import Runner
+from .sources import source_files, REQUIRED
+from .dependencies import check_requirements
 
 
 def schema_check(value, name):
@@ -73,7 +75,7 @@ def check_outputs(public, manifest, spec):
 def read_spec(source):
     source = Path(source).resolve()
     check_tree(source)
-    for name in ('challenge.json', 'README.md', 'WRITEUP_PRIVADO.md', 'generate.py', 'test_generate.py'):
+    for name in REQUIRED:
         if not (source / name).is_file() or not (source / name).stat().st_size:
             raise ContractError('Falta archivo obligatorio: ' + name)
     spec = load_json(source / 'challenge.json')
@@ -82,11 +84,10 @@ def read_spec(source):
         safe_name(name)
     deps = source / 'requirements.txt'
     if deps.exists():
-        if not any('requirements.txt' in entry for entry in spec['requirements']):
-            raise ContractError('Documentar requirements.txt en requirements')
-        for line in deps.read_text(encoding='utf-8').splitlines():
-            if line.strip() and not line.startswith('#') and not re.fullmatch(r'[A-Za-z0-9_.-]+==[A-Za-z0-9_.+-]+', line):
-                raise ContractError('Dependencias deben fijar versión exacta; instalación siempre externa')
+        check_requirements(deps.read_text(encoding='utf-8'), spec)
+    if (source / 'environment.json').exists():
+        schema_check(load_json(source / 'environment.json'), 'environment')
+    source_files(source, spec)
     return spec
 
 

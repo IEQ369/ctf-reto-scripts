@@ -14,8 +14,11 @@ def main():
     p.add_argument('--seed', default='ctf-validation-v3')
     p.add_argument('--json', action='store_true')
     p.add_argument('--parameters', help='Archivo JSON de opciones no secretas del reto')
+    p.add_argument('--environment', help='Entorno creado con prepare_environment.py para este reto')
     a = p.parse_args()
-    runner = Runner('local' if a.trusted_local else 'docker' if a.docker_image else 'none', a.docker_image)
+    if a.environment and not a.trusted_local:
+        p.error('--environment requiere --trusted-local')
+    runner = Runner('local' if a.trusted_local else 'docker' if a.docker_image else 'none', a.docker_image, a.environment)
     try:
         parameters = load_json(a.parameters) if a.parameters else {}
     except Exception:

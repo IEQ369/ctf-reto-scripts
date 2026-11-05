@@ -16,11 +16,14 @@ def main():
     flags.add_argument('--flag-file', help='Archivo privado UTF-8 de una línea')
     p.add_argument('--seed', default='demo-v3')
     p.add_argument('--parameters', help='Archivo JSON de opciones no secretas')
+    p.add_argument('--environment', help='Entorno preparado para este reto')
     p.add_argument('--output', required=True, help='Directorio NUEVO para una instancia')
     group = p.add_mutually_exclusive_group(required=True)
     group.add_argument('--trusted-local', action='store_true')
     group.add_argument('--docker-image')
     a = p.parse_args()
+    if a.environment and not a.trusted_local:
+        p.error('--environment requiere --trusted-local')
     try:
         source = Path(a.challenge).resolve()
         spec = read_spec(source)
@@ -30,7 +33,7 @@ def main():
         if output.is_relative_to(source) or source.is_relative_to(output):
             raise ContractError('Usar una salida independiente de las fuentes')
         flag = a.flag if a.flag is not None else Path(a.flag_file).read_text(encoding='utf-8').rstrip('\r\n')
-        runner = Runner('local' if a.trusted_local else 'docker', a.docker_image)
+        runner = Runner('local' if a.trusted_local else 'docker', a.docker_image, a.environment)
         parameters = load_json(a.parameters) if a.parameters else {}
         request, manifest = build_once(source, spec, runner, output, a.seed, flag, parameters)
         verify_instance(source, spec, runner, request, manifest, flag)

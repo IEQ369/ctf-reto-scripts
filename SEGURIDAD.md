@@ -26,6 +26,13 @@ que confías en el generador y su prueba: ambos pueden acceder a tu equipo. Un
 subprocess no es un sandbox. Hay timeout, pero no cuotas duras de memoria/disco ni
 garantía de detener procesos descendientes en ejecución local.
 
+`prepare_environment.py` separa las bibliotecas Python por reto. Instalar dependencias
+también puede ejecutar código de construcción de paquetes y requiere `--trusted-local`.
+Usa código revisado o un entorno aislado externo para entregas desconocidas. El venv
+no aísla procesos, red, compiladores ni SDK, y no elimina el acceso a archivos del host.
+Las versiones instaladas se registran localmente, pero no se monitorizan cambios
+manuales posteriores. No hay garantía de reproducibilidad si las transitivas no se fijan.
+
 El runner Docker opcional limita memoria, CPU, procesos, red, privilegios y montajes.
 Requiere imagen preparada con dependencias; no instala herramientas automáticamente.
 No fue ejecutado en esta entrega. Hace falta una cuota externa de disco y revisión
@@ -38,6 +45,13 @@ reproducibilidad. Se inspeccionan nombres y límites dentro de ZIP/APK, rechazan
 material privado reconocible, rutas peligrosas y enlaces. Los ZIP cifrados no están
 admitidos por esta inspección automática. Otros formatos y archivos anidados exigen
 revisión específica.
+
+La verificación del ZIP privado de entrega es independiente de la ejecución: no
+extrae ni importa código, comprueba todos los CRC por lectura limitada y valida los
+recursos declarados. Un tercero puede reescribir un ZIP y actualizar sus CRC; por eso
+la comparación SHA-256 requiere un valor recibido por un canal confiable separado.
+`VERIFICADO` no afirma que el código sea seguro o que el reto se resuelva. El write-up
+se conserva para lectura humana y no se evalúa semánticamente.
 
 No existe detección universal de secretos o write-ups renombrados/ofuscados. Los
 límites de archivos se comprueban después de generar y no evitan por sí mismos que

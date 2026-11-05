@@ -1,5 +1,8 @@
 # Guía de autores
 
+Descarga y prepara el kit siguiendo el [inicio rápido](README.md#inicio-rápido-powershell).
+Usa un entorno para las herramientas del kit y otro por reto que tenga dependencias.
+
 ## 1. Una carpeta por reto
 
 Cada script implementa exclusivamente
@@ -14,6 +17,7 @@ mi-reto/
   WRITEUP_PRIVADO.md   solución completa para el organizador
   assets/              material base opcional, nunca copiar todo automáticamente
   requirements.txt     dependencias Python opcionales con versiones exactas
+  environment.json     versión de Python y herramientas externas (opcional en retos anteriores)
 ```
 
 Desde la raíz del kit, usando el `$py` preparado en el README:
@@ -43,7 +47,11 @@ manual y no se obtiene aprobación automática.
 
 `source_paths` enumera archivos o carpetas adicionales necesarios para reconstruir
 el reto, por ejemplo `["src", "build.sh"]`. Las cinco piezas obligatorias, `assets/`
-y `requirements.txt` se incluyen automáticamente en la entrega privada.
+y `requirements.txt`, `environment.json` y `cleanup.py` se incluyen automáticamente
+cuando existen. Declara también binarios, configuraciones y scripts auxiliares que
+necesites; por ejemplo `["src", "config", "build/programa.bin"]`. Las bases de datos,
+logs y claves sintéticas son assets válidos. Las rutas deben estar dentro del reto.
+Si declaras un recurso ausente o excluido, la entrega se rechaza en vez de omitirlo.
 
 No introduzcas claves del servidor en parámetros, fuentes o assets. Las puntuaciones
 y pistas son metadatos; este kit no cobra pistas ni concede puntos.
@@ -87,13 +95,50 @@ cambiar mayúsculas. No basta con comprobar que existe un ZIP o devolver un valo
 
 Completa el write-up con pasos, herramientas, comandos de resolución y dependencias.
 Menciona herramientas como Ghidra; no incluyas sus instaladores en el reto.
+El write-up solo se comprueba estructuralmente: una persona revisa su contenido.
+No se interpreta como código ni sustituye `test_generate.py`.
 
 ## 5. Probar
+
+Antes de probar, completa `environment.json` (las plantillas lo incluyen):
+
+```json
+{
+  "python": "3.13",
+  "system_requirements": [],
+  "setup_notes": "Solo Python. No requiere herramientas externas."
+}
+```
+
+Para reversing con compilador o mobile con SDK, enumera herramientas/versiones en
+`system_requirements` y escribe los pasos de instalación en el README del reto.
+El kit no instala ni ejecuta esos pasos. Un venv no separa compiladores ni SDK.
+
+Si necesitas bibliotecas, crea `requirements.txt` con una entrada `nombre==versión`
+por línea y menciona el archivo en `requirements` de `challenge.json`. Fija también
+las dependencias transitivas necesarias para reproducir el entorno. No se admiten
+opciones de pip, URLs ni inclusiones de otros requirements en este contrato.
+
+Prepara un entorno NUEVO para este reto después de revisar código y dependencias:
+
+```powershell
+& $py tools/prepare_environment.py mis-retos/mi-reto --output work/env-mi-reto --trusted-local
+```
+
+Usa `--python RUTA_AL_PYTHON` si requiere otra versión ya instalada. Se admite declarar
+`3.13` o una versión exacta como `3.13.15`. No descarga intérpretes. Para paquetes
+preparados sin acceso al índice, añade `--wheelhouse RUTA --no-index`.
+
+El entorno instala únicamente bibliotecas del reto. El runtime se facilita mediante
+las herramientas del kit, sin imponer sus dependencias al generador. No copies el
+venv en la entrega. Si cambias los requisitos, la configuración del entorno, la
+ubicación del reto o su versión, prepara un entorno nuevo. Un fallo puede dejar una
+carpeta incompleta: el kit no la reutiliza ni sobrescribe.
 
 Cuando la implementación esté lista, cambia `readiness` a `ready` y ejecuta:
 
 ```powershell
-& $py tools/validate_challenge.py mis-retos/mi-reto --trusted-local
+& $py tools/validate_challenge.py mis-retos/mi-reto --environment work/env-mi-reto --trusted-local
 ```
 
 El validador genera A, repite A y genera B con dos flags ficticias distintas. Resuelve
@@ -107,7 +152,7 @@ También revisa tamaños, hashes, archivos declarados y material privado reconoc
 Para producir una instancia concreta:
 
 ```powershell
-& $py tools/generate_instance.py mis-retos/mi-reto --flag 'CTF{PRUEBA_01}' --output work/mi-reto-a --trusted-local
+& $py tools/generate_instance.py mis-retos/mi-reto --flag 'CTF{PRUEBA_01}' --output work/mi-reto-a --environment work/env-mi-reto --trusted-local
 ```
 
 Si tu reto necesita opciones, añade `--parameters opciones.json` al generar, validar
@@ -122,7 +167,8 @@ No vuelvas a usar ese directorio como una instancia válida.
 ## 6. Entregar al organizador
 
 ```powershell
-& $py tools/package_challenge.py mis-retos/mi-reto --output bundles/mi-reto.zip --trusted-local
+& $py tools/package_challenge.py mis-retos/mi-reto --output bundles/mi-reto.zip --environment work/env-mi-reto --trusted-local
+& $py tools/verify_package.py bundles/mi-reto.zip
 ```
 
 Se valida de nuevo y se empaquetan las fuentes necesarias. Este ZIP es **privado**.
@@ -132,6 +178,27 @@ repositorio público del kit; sus ejemplos sí son material didáctico público.
 
 Un borrador manual puede entregarse con `--allow-manual`, quedando explícitamente
 marcado como tal. Esa opción no convierte un reto rechazado en aprobado.
+
+El empaquetador verifica el ZIP antes de entregarlo y muestra `package_sha256`.
+El receptor puede comprobar ese valor por un canal confiable y usar
+`verify_package.py paquete.zip --sha256 HASH_RECIBIDO`. La revisión estática comprueba
+estructura, recursos, rutas, duplicados, límites y CRC sin ejecutar código. Un
+`VALIDACION.json` que diga APROBADO no sirve como prueba independiente. Después de
+revisar la entrega, el receptor prepara un entorno nuevo y repite la validación.
+
+Checklist de entrega:
+
+- [ ] Generador y solucionador funcionales con flags distintas.
+- [ ] README con preparación, versiones y parámetros; write-up completo para revisión humana.
+- [ ] Assets, código, configuraciones y limpieza declarados/incluidos.
+- [ ] Dependencias probadas en un entorno nuevo, fuera del entorno de otros retos.
+- [ ] ZIP final verificado; enviar ese ZIP PRIVADO y su SHA-256 al organizador.
+- [ ] Extraer una copia en una carpeta nueva, preparar otro entorno y validar desde esa copia para detectar recursos olvidados.
+- [ ] Servicios o compilaciones pendientes identificados como REVISIÓN MANUAL.
+
+El verificador comprueba los recursos declarados, pero no puede deducir del código
+todos los archivos que necesita tu mecánica. Esa última prueba desde la entrega
+extraída detecta dependencias accidentales de tu carpeta original.
 
 ## Categorías especiales
 

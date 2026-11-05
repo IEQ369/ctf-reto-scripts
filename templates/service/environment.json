@@ -1,0 +1,5 @@
+{
+  "python": "3.13",
+  "system_requirements": [],
+  "setup_notes": "Completar en README las versiones de herramientas y pasos de preparación. Cambiar python si el reto utiliza otra versión compatible."
+}

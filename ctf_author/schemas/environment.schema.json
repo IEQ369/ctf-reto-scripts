@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "python": {"type": "string", "pattern": "^3\\.[0-9]+(?:\\.[0-9]+)?$"},
+    "system_requirements": {"type": "array", "maxItems": 50, "items": {"type": "string", "minLength": 1, "maxLength": 2000}},
+    "setup_notes": {"type": "string", "maxLength": 8000}
+  },
+  "required": ["python", "system_requirements", "setup_notes"]
+}
