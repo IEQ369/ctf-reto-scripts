@@ -56,7 +56,27 @@ Si declaras un recurso ausente o excluido, la entrega se rechaza en vez de omiti
 No introduzcas claves del servidor en parámetros, fuentes o assets. Las puntuaciones
 y pistas son metadatos; este kit no cobra pistas ni concede puntos.
 
+### Pistas y su costo
+
+En `challenge.json`, reemplaza la pista de ejemplo de la plantilla por una propia:
+
+```json
+"hints": [
+  {"cost": 50, "text": "Usa un compilador de Windows"},
+  {"cost": 0, "text": "Revisa cómo se transforma la entrada"}
+]
+```
+
+`cost` es un entero mayor o igual a cero, sin comillas, expresado en puntos;
+cero indica una pista gratuita. `text` contiene el texto de la pista.
+Si no hay pistas, usa `"hints": []`. No entregues la pista de ejemplo sin editar.
+Las pistas antiguas como `"hints": ["Revisa los metadatos"]` siguen siendo válidas,
+pero no declaran un costo; el sistema receptor deberá definirlo antes de publicarlas.
+Usa las claves `cost` y `text`, no `value` ni `descripcion`.
+El kit valida estos datos; la web muestra las pistas y aplica el descuento.
+
 ## 3. Programar la mecánica
+
 
 Completa `construir_reto(contexto)` en `generate.py`:
 

@@ -7,6 +7,22 @@ instancia por ejecución. Otro programa selecciona la flag; el generador no reci
 usuario, cuenta, autenticación ni clave maestra. No se implementan backend, caché,
 registro, puntuación o asignación de flags en este repositorio.
 
+## Pistas en los metadatos
+
+`challenge.json.hints` admite hasta 50 pistas. El formato recomendado es
+`{"cost": 50, "text": "Usa un compilador de Windows"}`: ambos campos son obligatorios,
+no se admiten claves adicionales, `cost` es un entero no negativo en puntos y
+`text` tiene entre 1 y 8000 caracteres. Costo cero significa pista gratuita.
+Una lista vacía indica que no hay pistas.
+
+Por compatibilidad con los retos v3 existentes, cada elemento también puede ser un
+texto de 1 a 8000 caracteres. Ese formato no declara costo: el receptor debe
+establecerlo antes de publicar, sin asumir automáticamente que es gratuito.
+Se permiten ambos formatos en una lista. Esta ampliación conserva `schema_version: 3`;
+los validadores anteriores deben actualizarse para aceptar las pistas con costo.
+Las pistas no forman parte de la entrada del generador. Su publicación y el
+descuento de puntos corresponden a la web, no a este kit.
+
 ## Entrada del generador
 
 Invocar `python generate.py`, con cwd en la carpeta del reto y el kit instalado.

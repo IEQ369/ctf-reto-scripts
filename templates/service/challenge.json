@@ -22,7 +22,12 @@
   "requirements": [
     "Python 3.13 y CTF Reto Scripts 3.0.0; sin dependencias adicionales"
   ],
-  "hints": [],
+  "hints": [
+    {
+      "cost": 50,
+      "text": "REEMPLAZAR: escribe una pista concreta para este reto"
+    }
+  ],
   "limits": {
     "seconds": 30,
     "memory_mb": 256,

@@ -17,6 +17,22 @@ LOCAL = Runner('local')
 
 
 class KitTests(unittest.TestCase):
+    def test_hint_formats_and_costs(self):
+        spec = read_spec(ROOT/'examples/forensics')
+        for hints in [[], ['Pista antigua'], [{'cost': 0, 'text': 'Gratis'}],
+                      [{'cost': 50, 'text': 'Compila en Windows'}, 'Pista antigua']]:
+            with self.subTest(hints=hints):
+                schema_check(dict(spec, hints=hints), 'challenge')
+        for hint in [{'cost': -1, 'text': 'Pista'}, {'cost': '50', 'text': 'Pista'},
+                     {'cost': 1.5, 'text': 'Pista'}, {'cost': True, 'text': 'Pista'},
+                     {'cost': 50}, {'text': 'Pista'}, {'cost': 50, 'text': ''},
+                     {'cost': 50, 'text': 'x' * 8001},
+                     {'cost': 50, 'text': 'Pista', 'extra': 1},
+                     {'value': '200', 'descripcion': 'Pista'}, '']:
+            with self.subTest(hint=hint):
+                with self.assertRaises(ContractError):
+                    schema_check(dict(spec, hints=[hint]), 'challenge')
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.work = Path(self.temp.name)

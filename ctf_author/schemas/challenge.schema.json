@@ -187,9 +187,32 @@
     "hints": {
       "type": "array",
       "items": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 8000
+        "oneOf": [
+          {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 8000
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "cost": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 8000
+              }
+            },
+            "required": [
+              "cost",
+              "text"
+            ]
+          }
+        ]
       },
       "maxItems": 50
     },
